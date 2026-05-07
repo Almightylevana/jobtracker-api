@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from app.models import ApplicationCreate, Application
 
 app = FastAPI()
@@ -16,3 +16,13 @@ def create_application(payload: ApplicationCreate) -> Application:
     applications.append(new_app)
     return new_app
 
+@app.get("/applications")
+def list_applications()->list[Application]:
+    return applications
+
+@app.get("/applications/{app_id}")
+def get_application(app_id: int)-> Application:
+    for app in applications:
+        if app.id == app_id:
+            return app
+    raise HTTPException(status_code=404, detail=f"Application{app_id} not found")
