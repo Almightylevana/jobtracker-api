@@ -4,7 +4,7 @@ from app.main import app, applications
 
 client = TestClient(app)
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def clear_applications():
     applications.clear()
     yield
@@ -80,3 +80,49 @@ def test_get_application_not_found():
     response = client.get("/applications/99999")
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
+
+def test_update_application_success():
+    payload = {
+        "company": "Acme",
+        "role": "Engineer",
+        "status": "applied",
+        "applied_date": "2026-05-07"
+    }
+
+    create_response = client.post("/applications", json=payload)
+    created_id = create_response.json()["id"]
+
+    update_payload = {"status": "interviewing"}
+    response = client.patch(f"/applications/{created_id}", json=update_payload)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "interviewing"
+    assert data["company"] == "Acme"
+    assert data["id"] == created_id
+
+def test_update_application_not_found():
+    response = client.patch("/applications/99999999", json={"status": "interviewing"})
+    assert response.status_code == 404
+
+def test_delete_application_success():
+    payload = {
+        "company": "Acme",
+        "role": "Engineer",
+        "status": "applied",
+        "applied_date": "2026-05-07"
+    }
+    create_response = client.post("/applications", json=payload)
+    created_id = create_response.json()["id"]
+
+    delete_response = client.delete(f"/applications/{created_id}")
+    assert delete_response.status_code == 204
+
+    get_response = client.get(f"/applications/{created_id}")
+    assert get_response.status_code == 404
+
+def test_delete_application_not_found():
+    response = client.delete("/applications/9999999")
+    assert response.status_code == 404
+
+
